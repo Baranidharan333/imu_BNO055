@@ -11,7 +11,8 @@ PWR_MODE = 0x3E
 
 QUAT = 0x20
 GYRO = 0x14
-ACC  = 0x08   # 🔥 RAW accel (for INS)
+ACC  = 0x08
+MAG  = 0x0E   # 🔥 ADDED magnetometer
 
 CONFIG_MODE = 0x00
 NDOF_MODE   = 0x0C
@@ -24,7 +25,7 @@ def write(reg, val):
 def read(reg, n):
     return i2c.readfrom_mem(BNO055_ADDR, reg, n)
 
-# ✅ Correct signed conversion
+# Signed conversion
 def read_vec(reg, n, scale):
     data = read(reg, n*2)
     out = []
@@ -58,9 +59,8 @@ while not wlan.isconnected():
 print("IP:", wlan.ifconfig()[0])
 
 # UDP
-UDP_IP = "192.168.200.153"   # your PC IP
+UDP_IP = "192.168.200.153"
 UDP_PORT = 5000
-
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 dt = 0.01  # 100 Hz
@@ -71,8 +71,9 @@ while True:
     q = read_vec(QUAT, 4, 16384.0)
     g = read_vec(GYRO, 3, 16.0)
     a = read_vec(ACC, 3, 100.0)
+    m = read_vec(MAG, 3, 16.0)   # 🔥 MAG added
 
-    data = f"Q:{q},A:{a},G:{g}"
+    data = f"Q:{q},A:{a},G:{g},M:{m}\n"
     sock.sendto(data.encode(), (UDP_IP, UDP_PORT))
 
     elapsed = (time.ticks_ms() - start)/1000
